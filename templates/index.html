@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfólio | Design Gráfico & Fotografia</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <a href="#" class="logo">Portfólio.</a>
+            <nav class="nav">
+                <ul class="nav-list">
+                    <li><a href="#sobre" class="nav-link">Sobre Mim</a></li>
+                    <li><a href="#projetos" class="nav-link">Projetos</a></li>
+                    <li><a href="#contato" class="nav-link">Contato</a></li>
+                </ul>
+            </nav>
+            <button class="mobile-menu-btn" aria-label="Abrir menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero / Sobre Mim -->
+        <section id="sobre" class="hero">
+            <div class="container hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title">Transformando ideias em <span>impacto visual.</span></h1>
+                    <p class="hero-description">
+                        Olá! Sou um designer gráfico e fotógrafo apaixonado por criar identidades visuais memoráveis e capturar momentos únicos. Com foco em estética e funcionalidade, ajudo marcas a contarem suas histórias.
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="#projetos" class="btn btn-primary">Ver Projetos</a>
+                        <a href="#contato" class="btn btn-secondary">Fale Comigo</a>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <img src="https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&w=800&q=80" alt="Designer trabalhando em seu estúdio" loading="lazy">
+                </div>
+            </div>
+        </section>
+
+        <!-- Projetos -->
+        <section id="projetos" class="projetos">
+            <div class="container">
+                <h2 class="section-title">Meus Projetos</h2>
+                <div class="projetos-grid">
+                    <!-- Projeto 1 -->
+                    <article class="projeto-card">
+                        <div class="projeto-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1600132806370-bf17e65e942f?auto=format&fit=crop&w=600&q=80" alt="Projeto de Identidade Visual" loading="lazy">
+                        </div>
+                        <div class="projeto-info">
+                            <span class="projeto-categoria">Design Gráfico</span>
+                            <h3 class="projeto-titulo">Identidade Visual - Marca X</h3>
+                            <p class="projeto-desc">Desenvolvimento completo de branding, incluindo logo, paleta de cores e tipografia.</p>
+                        </div>
+                    </article>
+                    
+                    <!-- Projeto 2 -->
+                    <article class="projeto-card">
+                        <div class="projeto-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&w=600&q=80" alt="Ensaio Fotográfico" loading="lazy">
+                        </div>
+                        <div class="projeto-info">
+                            <span class="projeto-categoria">Fotografia</span>
+                            <h3 class="projeto-titulo">Ensaio Urbano</h3>
+                            <p class="projeto-desc">Sessão de fotos explorando a arquitetura e o estilo de vida na cidade.</p>
+                        </div>
+                    </article>
+
+                    <!-- Projeto 3 -->
+                    <article class="projeto-card">
+                        <div class="projeto-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=600&q=80" alt="Design de Embalagem" loading="lazy">
+                        </div>
+                        <div class="projeto-info">
+                            <span class="projeto-categoria">Design Gráfico</span>
+                            <h3 class="projeto-titulo">Design de Embalagem</h3>
+                            <p class="projeto-desc">Criação de rótulos e embalagens sustentáveis para produtos orgânicos.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contato -->
+        <section id="contato" class="contato">
+            <div class="container">
+                <div class="contato-wrapper">
+                    <div class="contato-info">
+                        <h2 class="section-title">Vamos trabalhar juntos?</h2>
+                        <p class="contato-desc">Tem um projeto em mente ou quer apenas dizer um olá? Preencha o formulário e entrarei em contato o mais breve possível.</p>
+                        <ul class="contato-lista">
+                            <li>
+                                <strong>E-mail:</strong>
+                                <a href="mailto:contato@portfolio.com">contato@portfolio.com</a>
+                            </li>
+                            <li>
+                                <strong>Localização:</strong>
+                                <span>São Paulo, SP - Brasil</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="contato-form-wrapper">
+                        <form id="contato-form" class="form">
+                            <div class="form-group">
+                                <label for="nome">Nome</label>
+                                <input type="text" id="nome" name="nome" required placeholder="Seu nome completo">
+                            </div>
+                            <div class="form-group">
+                                <label for="email">E-mail</label>
+                                <input type="email" id="email" name="email" required placeholder="seu@email.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="mensagem">Mensagem</label>
+                                <textarea id="mensagem" name="mensagem" required placeholder="Como posso ajudar?" rows="5"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block" id="submit-btn">
+                                <span>Enviar Mensagem</span>
+                            </button>
+                            <div id="form-status" class="form-status"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Portfólio. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
