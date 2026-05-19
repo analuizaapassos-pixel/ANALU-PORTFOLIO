@@ -35,14 +35,54 @@ const delete_from_cloudinary = async (url: string) => {
 
 app.use(express.json());
 
-// Database Setup (LibSQL for Turso with a safe fallback to prevent fatal crashes if env vars are not loaded yet)
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || 'file:portfolio_fallback.db',
-  authToken: process.env.TURSO_AUTH_TOKEN || ''
-});
+// Variables to track database state safely
+let db: any;
+let dbType = 'none';
+let dbInitialized = false;
+let dbInitError: any = null;
+
+const hasTurso = !!process.env.TURSO_DATABASE_URL;
+const isVercel = !!process.env.VERCEL;
+
+if (hasTurso) {
+  try {
+    db = createClient({
+      url: process.env.TURSO_DATABASE_URL!,
+      authToken: process.env.TURSO_AUTH_TOKEN || ''
+    });
+    dbType = 'turso';
+  } catch (err: any) {
+    dbInitError = err;
+    console.error("Erro ao criar cliente Turso:", err);
+  }
+} else if (!isVercel) {
+  try {
+    db = createClient({
+      url: 'file:portfolio_fallback.db'
+    });
+    dbType = 'local-file';
+  } catch (err: any) {
+    dbInitError = err;
+    console.error("Erro ao criar cliente SQLite local:", err);
+  }
+} else {
+  dbType = 'mock';
+  db = {
+    execute: async () => {
+      throw new Error("TURSO_DATABASE_URL não configurada no ambiente Vercel. Por favor, configure as variáveis de ambiente e realize um novo deploy.");
+    },
+    batch: async () => {
+      throw new Error("TURSO_DATABASE_URL não configurada no ambiente Vercel. Por favor, configure as variáveis de ambiente e realize um novo deploy.");
+    }
+  };
+}
 
 // Database schema initialization
 async function initDb() {
+  if (dbType === 'mock') {
+    console.log("Banco de dados em modo mock (sem credenciais). Ignorando inicialização.");
+    return;
+  }
   try {
     await db.execute(`
       CREATE TABLE IF NOT EXISTS projects (
@@ -153,7 +193,9 @@ async function initDb() {
       await db.execute({ sql: "INSERT INTO settings (key, value) VALUES ('test_data_wiped', 'true')", args: [] });
       console.log("🧹 FAXINA CONCLUÍDA: Logos, Experiências e Skills de teste foram removidos!");
     }
-  } catch (err) {
+    dbInitialized = true;
+  } catch (err: any) {
+    dbInitError = err;
     console.error("Erro na inicialização do banco:", err);
   }
 }
@@ -175,6 +217,26 @@ const authenticate = (req: any, res: any, next: any) => {
 };
 
 // API Routes
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    vercel: !!process.env.VERCEL,
+    env: {
+      ADMIN_USER: !!process.env.ADMIN_USER,
+      ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
+      ADMIN_PASS: !!process.env.ADMIN_PASS,
+      TURSO_DATABASE_URL: !!process.env.TURSO_DATABASE_URL,
+      TURSO_AUTH_TOKEN: !!process.env.TURSO_AUTH_TOKEN,
+      CLOUDINARY_CLOUD_NAME: !!process.env.CLOUDINARY_CLOUD_NAME,
+    },
+    database: {
+      type: dbType,
+      initialized: dbInitialized,
+      error: dbInitError ? dbInitError.message : null
+    }
+  });
+});
+
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
