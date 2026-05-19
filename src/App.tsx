@@ -2120,9 +2120,9 @@ const InteractiveBackground = () => {
     <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-white select-none">
       <div 
         ref={backdropRef}
-        className="absolute top-0 left-0 w-[45vw] h-[45vw] md:w-[35vw] md:h-[35vw] rounded-full blur-[80px] md:blur-[120px] transition-transform duration-500 ease-out will-change-transform"
+        className="absolute top-0 left-0 w-[50vw] h-[50vw] md:w-[40vw] md:h-[40vw] rounded-full blur-[70px] md:blur-[100px] transition-transform duration-500 ease-out will-change-transform"
         style={{
-          background: 'radial-gradient(circle, rgba(14, 18, 223, 0.12) 0%, rgba(96, 165, 250, 0.04) 50%, rgba(255, 255, 255, 0) 100%)',
+          background: 'radial-gradient(circle, rgba(29, 78, 216, 0.35) 0%, rgba(56, 189, 248, 0.16) 55%, rgba(255, 255, 255, 0) 100%)',
           transform: 'translate3d(50vw, 50vh, 0) translate(-50%, -50%)'
         }}
       />
