@@ -281,7 +281,6 @@ function Home() {
   const [projects, setProjects] = useState<any[]>([]);
   const [logos, setLogos] = useState<any[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
   const [aboutText, setAboutText] = useState('');
   const [profilePhoto, setProfilePhoto] = useState('');
   const [contactSettings, setContactSettings] = useState<any>({});
@@ -296,7 +295,6 @@ function Home() {
     api.getProjects().then(setProjects);
     api.getLogos().then(setLogos);
     api.getExperiences().then(setExperiences);
-    api.getSkills().then(setSkills);
     api.getSettings().then(data => {
       setAboutText(data.about_text || '');
       setProfilePhoto(data.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80');
@@ -356,7 +354,6 @@ function Home() {
             <a href="#sobre" className="font-bold text-white/90 hover:text-white transition-colors">Sobre</a>
             <a href="#experiencias" className="font-bold text-white/90 hover:text-white transition-colors">Experiências</a>
             <a href="#trabalhos" className="font-bold text-white/90 hover:text-white transition-colors">Trabalhos</a>
-            <a href="#skills" className="font-bold text-white/90 hover:text-white transition-colors">Skills</a>
             <a href="#contato" className="font-bold text-white/90 hover:text-white transition-colors">Contato</a>
           </nav>
 
@@ -376,7 +373,6 @@ function Home() {
             <a href="#sobre" onClick={() => setIsMenuOpen(false)} className="font-bold text-xl text-white/90 hover:text-white transition-colors w-full text-center py-2">Sobre</a>
             <a href="#experiencias" onClick={() => setIsMenuOpen(false)} className="font-bold text-xl text-white/90 hover:text-white transition-colors w-full text-center py-2">Experiências</a>
             <a href="#trabalhos" onClick={() => setIsMenuOpen(false)} className="font-bold text-xl text-white/90 hover:text-white transition-colors w-full text-center py-2">Trabalhos</a>
-            <a href="#skills" onClick={() => setIsMenuOpen(false)} className="font-bold text-xl text-white/90 hover:text-white transition-colors w-full text-center py-2">Skills</a>
             <a href="#contato" onClick={() => setIsMenuOpen(false)} className="font-bold text-xl text-white/90 hover:text-white transition-colors w-full text-center py-2">Contato</a>
           </div>
         )}
@@ -593,72 +589,6 @@ function Home() {
           </section>
         )}
 
-        {/* Skills Section */}
-        {skills.length > 0 && (
-          <FadeInSection id="skills" className="py-24 px-6 md:px-12 lg:px-24 bg-white">
-            <div className="max-w-6xl mx-auto w-full">
-              <div className="flex flex-col items-start text-left mb-16">
-                <h2 className="font-heading text-4xl md:text-5xl font-extrabold text-primary-dark w-full text-left">Skills</h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Coluna 1: Softwares */}
-                <div>
-                  <h3 className="font-bold text-xl text-gray-900 mb-6 border-b-2 border-primary pb-2 inline-block">Softwares</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {skills.filter(s => s.category === 'software').map(skill => (
-                      <div key={skill.id} className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 shadow-sm border border-gray-100 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg p-2">
-                          <DynamicIcon name={skill.icon} size={20} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="text-sm font-light text-gray-800 truncate whitespace-nowrap block">{skill.name}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Coluna 2: Plataformas */}
-                <div>
-                  <h3 className="font-bold text-xl text-gray-900 mb-6 border-b-2 border-primary pb-2 inline-block">Plataformas</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {skills.filter(s => s.category === 'platform').map(skill => (
-                      <div key={skill.id} className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 shadow-sm border border-gray-100 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg p-2">
-                          <DynamicIcon name={skill.icon} size={20} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="text-sm font-light text-gray-800 truncate whitespace-nowrap block">{skill.name}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Coluna 3: Competências */}
-                <div>
-                  <h3 className="font-bold text-xl text-gray-900 mb-6 border-b-2 border-primary pb-2 inline-block">Competências</h3>
-                  <div className="flex flex-col gap-4">
-                    {skills.filter(s => s.category === 'competence').map(skill => (
-                      <div key={skill.id} className="bg-white rounded-xl p-4 flex flex-col gap-2 shadow-sm border border-gray-100 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg p-2">
-                            <DynamicIcon name={skill.icon} size={20} />
-                          </div>
-                          <span className="font-bold text-gray-900">{skill.name}</span>
-                        </div>
-                        {skill.description && (
-                          <p className="text-sm font-light text-gray-500">{skill.description}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </FadeInSection>
-        )}
 
        {/* --- CONTACT SECTION --- */}
         <footer 
@@ -905,13 +835,6 @@ function Admin() {
   const [expRole, setExpRole] = useState('');
   const [expLogoFile, setExpLogoFile] = useState<File | null>(null);
 
-  // Skills Form State
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [skillCategory, setSkillCategory] = useState<'software' | 'platform' | 'competence' | 'language'>('software');
-  const [skillIcon, setSkillIcon] = useState('');
-  const [skillName, setSkillName] = useState('');
-  const [skillDescription, setSkillDescription] = useState('');
-
   const [activeTab, setActiveTab] = useState('Sobre');
 
   const [loading, setLoading] = useState(false);
@@ -966,8 +889,6 @@ function Admin() {
     setLogos(l);
     const e = await api.getExperiences();
     setExperiences(e);
-    const sk = await api.getSkills();
-    setSkills(sk);
     const s = await api.getSettings();
     setAboutText(s.about_text || '');
     setProfilePhoto(s.profile_photo || '');
@@ -1189,39 +1110,6 @@ function Admin() {
     }
   };
 
-  const handleAddSkill = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token || !skillName || !skillIcon) return;
-    setLoading(true);
-    try {
-      await api.addSkill({ category: skillCategory, name: skillName, description: skillDescription, icon: skillIcon }, token);
-      setSkillName('');
-      setSkillIcon('');
-      setSkillDescription('');
-      fetchData();
-      alert('Skill adicionada com sucesso!');
-    } catch (err) {
-      alert('Erro ao adicionar skill');
-    }
-    setLoading(false);
-  };
-
-  const handleDeleteSkill = async (e: React.MouseEvent, id: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!window.confirm("Certeza que deseja excluir esta skill?")) return;
-
-    try {
-      const res = await api.deleteSkill(id, token);
-      if (res.success) {
-        setSkills(prev => prev.filter(s => Number(s.id) !== Number(id)));
-        alert("Skill excluída com sucesso!");
-      }
-    } catch (error) {
-      alert("Erro ao excluir skill.");
-    }
-  };
-
   const resetForm = () => {
     setEditingId(null);
     setTitle('');
@@ -1267,7 +1155,7 @@ function Admin() {
           <span className="font-extrabold text-2xl tracking-tight">Painel Admin</span>
         </div>
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {['Sobre', 'Experiências', 'Trabalhos', 'Skills', 'Clientes', 'Contato/Rodapé', 'Segurança'].map(tab => (
+          {['Sobre', 'Experiências', 'Trabalhos', 'Clientes', 'Contato/Rodapé', 'Segurança'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -1744,124 +1632,6 @@ function Admin() {
           </section>
         )}
 
-        {activeTab === 'Skills' && (
-          <section className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-2xl font-extrabold text-primary-dark mb-6">Habilidades & Competências</h2>
-            
-            <form onSubmit={handleAddSkill} className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 bg-gray-50 p-6 rounded-xl border border-gray-100">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Categoria</label>
-                <select 
-                  value={skillCategory}
-                  onChange={e => setSkillCategory(e.target.value as any)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-gray-700 bg-white"
-                >
-                  <option value="software">Softwares</option>
-                  <option value="platform">Plataformas</option>
-                  <option value="competence">Competências</option>
-                  <option value="language">Línguas</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Ícone (lucide.dev/icons)</label>
-                <input 
-                  type="text" 
-                  value={skillIcon}
-                  onChange={e => setSkillIcon(e.target.value)}
-                  placeholder="Ex: Figma, Monitor, Globe"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-normal"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Use os nomes exatos do site lucide.dev/icons</p>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Nome da Skill</label>
-                <input 
-                  type="text" 
-                  value={skillName}
-                  onChange={e => setSkillName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-normal"
-                  required
-                />
-              </div>
-              {(skillCategory === 'competence' || skillCategory === 'language') && (
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Descrição</label>
-                  <textarea 
-                    value={skillDescription}
-                    onChange={e => setSkillDescription(e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-normal resize-none"
-                  ></textarea>
-                </div>
-              )}
-              <div className="md:col-span-2 flex justify-end">
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="bg-primary text-white font-bold py-2 px-6 rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Salvando...' : 'Adicionar Skill'}
-                </button>
-              </div>
-            </form>
-
-            <div className="space-y-8">
-              {['software', 'platform', 'competence', 'language'].map(cat => {
-                const catSkills = skills.filter(s => s.category === cat);
-                if (catSkills.length === 0) return null;
-                
-                const catNames = {
-                  software: 'Softwares',
-                  platform: 'Plataformas',
-                  competence: 'Competências',
-                  language: 'Línguas'
-                };
-
-                return (
-                  <div key={cat}>
-                    <h3 className="font-bold text-lg text-gray-800 mb-4 border-b border-gray-200 pb-2">{(catNames as any)[cat]}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {catSkills.map((skill, index) => (
-                        <div key={skill.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-4 hover:border-primary transition-colors">
-                          <div className="flex items-center gap-4">
-                            <DynamicIcon name={skill.icon} />
-                            <div>
-                              <h4 className="font-bold text-gray-900">{skill.name}</h4>
-                              {skill.description && <p className="text-sm text-gray-500">{skill.description}</p>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-1 mr-4">
-                              <button onClick={() => moveItem(skills, setSkills, skills.findIndex(s => s.id === skill.id), 'up', 'skills')} disabled={index === 0} className="p-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-30">
-                                <ArrowUp size={16} />
-                              </button>
-                              <button onClick={() => moveItem(skills, setSkills, skills.findIndex(s => s.id === skill.id), 'down', 'skills')} disabled={index === catSkills.length - 1} className="p-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-30">
-                                <ArrowUp size={16} className="rotate-180" />
-                              </button>
-                            </div>
-                            <button 
-                              onClick={(e) => handleDeleteSkill(e, skill.id)}
-                              className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors"
-                              title="Excluir Skill"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-              {skills.length === 0 && (
-                <div className="py-8 text-center text-gray-500 font-normal italic">
-                  Nenhuma skill cadastrada.
-                </div>
-              )}
-            </div>
-          </section>
-        )}
 
         {activeTab === 'Segurança' && (
           <section className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
@@ -1983,6 +1753,8 @@ function ProjectDetail() {
     }
   }
 
+  const isMasonry = project?.category === 'Fotografia' || project?.category === 'Social Media';
+
   return (
     <div className="min-h-screen bg-transparent text-gray-900 font-sans">
       <header className="fixed top-0 w-full bg-gradient-to-r from-[#0E12DF] to-[#0a0b1a] z-50 shadow-md">
@@ -2026,7 +1798,28 @@ function ProjectDetail() {
                 </div>
               );
             } else if (group.type === 'imageGroup') {
-              return (
+              return isMasonry ? (
+                <div key={index} className="columns-1 sm:columns-2 lg:columns-3 gap-4 md:gap-6 w-full">
+                  {group.images.map((img: any, imgIndex: number) => {
+                    const globalIdx = allImages.findIndex((b: any) => b.content === img.content);
+                    return (
+                      <div 
+                        key={imgIndex}
+                        className="cursor-zoom-in overflow-hidden rounded-2xl group relative shadow-sm border border-gray-200/20 hover:shadow-lg hover:border-gray-300/30 transition-all duration-300 break-inside-avoid mb-4 md:mb-6 animate-fade-in"
+                        onClick={() => setLightboxIndex(globalIdx !== -1 ? globalIdx : null)}
+                      >
+                        <img 
+                          src={img.content || undefined} 
+                          alt={`Galeria ${index} - Imagem ${imgIndex}`} 
+                          className="w-full h-auto object-cover block group-hover:scale-[1.01] transition-transform duration-500" 
+                        />
+                        {/* Hover overlay for a sleek premium feel */}
+                        <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
                 <div key={index} className="flex flex-col w-full gap-4 md:gap-6">
                   {group.images.map((img: any, imgIndex: number) => {
                     const globalIdx = allImages.findIndex((b: any) => b.content === img.content);

@@ -535,53 +535,12 @@ app.delete('/api/experiences/:id', authenticate, async (req, res) => {
   }
 });
 
-// Skills API Routes
-app.get('/api/skills', async (req, res) => {
-  try {
-    const skills = await db.execute('SELECT * FROM skills ORDER BY sort_order ASC, id ASC');
-    res.json(skills.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao obter skills' });
-  }
-});
-
-app.post('/api/skills', authenticate, async (req, res) => {
-  try {
-    const { category, name, description, icon } = req.body;
-    if (!category || !name || !icon) return res.status(400).json({ error: 'Category, name and icon are required' });
-    
-    const info = await db.execute({
-      sql: 'INSERT INTO skills (category, name, description, icon) VALUES (?, ?, ?, ?)',
-      args: [category, name, description || '', icon]
-    });
-    
-    res.json({ success: true, id: Number(info.lastInsertRowid) });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao adicionar skill' });
-  }
-});
-
-app.delete('/api/skills/:id', authenticate, async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
-  
-  try {
-    await db.execute({ sql: 'DELETE FROM skills WHERE id = ?', args: [id] });
-    res.json({ success: true, deletedId: id });
-  } catch (error) {
-    console.error('Error deleting skill:', error);
-    res.status(500).json({ error: 'Erro interno ao deletar skill' });
-  }
-});
-
 // Reorder API Route
 app.put('/api/reorder/:type', authenticate, async (req, res) => {
   const { type } = req.params;
   const { items } = req.body;
   
-  if (!['projects', 'experiences', 'skills'].includes(type)) {
+  if (!['projects', 'experiences'].includes(type)) {
     return res.status(400).json({ error: 'Invalid type' });
   }
 
