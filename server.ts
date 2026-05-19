@@ -1,5 +1,5 @@
 import express from 'express';
-import { createClient } from '@libsql/client';
+import { createClient as createWebClient } from '@libsql/client/web';
 import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
@@ -46,7 +46,7 @@ const isVercel = !!process.env.VERCEL;
 
 if (hasTurso) {
   try {
-    db = createClient({
+    db = createWebClient({
       url: process.env.TURSO_DATABASE_URL!,
       authToken: process.env.TURSO_AUTH_TOKEN || ''
     });
@@ -57,7 +57,9 @@ if (hasTurso) {
   }
 } else if (!isVercel) {
   try {
-    db = createClient({
+    const nativeClientPkg = '@libsql/client';
+    const { createClient: createLocalClient } = await import(nativeClientPkg);
+    db = createLocalClient({
       url: 'file:portfolio_fallback.db'
     });
     dbType = 'local-file';
