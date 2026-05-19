@@ -179,13 +179,10 @@ app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     
-    const dbUserRes = await db.execute({ sql: 'SELECT value FROM settings WHERE key = ?', args: ['admin_user'] });
-    const dbPassRes = await db.execute({ sql: 'SELECT value FROM settings WHERE key = ?', args: ['admin_pass'] });
+    const adminUser = process.env.ADMIN_USER || 'admin';
+    const adminPassword = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || 'analu2026';
 
-    const adminUser = (dbUserRes.rows[0]?.value as string) || process.env.ADMIN_USER || 'admin';
-    const adminPass = (dbPassRes.rows[0]?.value as string) || process.env.ADMIN_PASS || 'analu2026';
-
-    if (username === adminUser && password === adminPass) {
+    if (username === adminUser && password === adminPassword) {
       const token = jwt.sign({ user: username }, SECRET_KEY, { expiresIn: '24h' });
       res.json({ token });
     } else {

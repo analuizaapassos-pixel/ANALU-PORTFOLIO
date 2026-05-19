@@ -653,14 +653,25 @@ function Home() {
   );
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
+
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
@@ -675,51 +686,95 @@ function Login() {
         navigate('/admin');
       } else {
         setError(data.error || 'Credenciais inválidas');
-        alert('Erro: ' + (data.error || 'Credenciais inválidas'));
       }
     } catch (err) {
-      setError('Erro de conexão');
-      alert('Erro de conexão com o servidor');
+      setError('Erro de conexão com o servidor. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-[#0E12DF] to-[#0a0b1a] flex items-center justify-center px-6 relative overflow-hidden font-sans">
+      {/* Subtle decorative blurred circles for depth */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-blue-300/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-cyan-200/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+      <div className="bg-white/10 backdrop-blur-md border border-white/15 p-8 md:p-10 rounded-3xl shadow-2xl max-w-md w-full relative z-10 transition-all">
         <div className="text-center mb-8">
-          <h1 className="font-extrabold text-3xl text-primary-dark mb-2">Login</h1>
-          <p className="text-gray-500 font-normal">Acesso restrito ao painel de controle</p>
+          <h1 className="font-heading font-extrabold text-3xl md:text-4xl text-white mb-3 tracking-tight">
+            Painel Admin
+          </h1>
+          <p className="text-white/60 text-sm md:text-base font-light">
+            Acesso exclusivo para gerenciamento do portfólio
+          </p>
         </div>
         
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm font-bold text-center">{error}</div>}
+        {error && (
+          <div 
+            role="alert" 
+            aria-live="assertive"
+            className="bg-red-500/10 border border-red-500/20 text-red-200 p-4 rounded-2xl mb-6 text-sm font-semibold text-center"
+          >
+            {error}
+          </div>
+        )}
         
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Usuário</label>
+            <label 
+              htmlFor="username" 
+              className="block text-sm font-semibold text-white/80 mb-2"
+            >
+              Usuário
+            </label>
             <input 
+              id="username"
               type="text" 
               value={username}
               onChange={e => setUsername(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-normal"
+              placeholder="Digite o seu usuário"
+              className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/30 outline-none transition-all focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 font-normal"
               required
+              disabled={loading}
+              autoComplete="username"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Senha</label>
+            <label 
+              htmlFor="password" 
+              className="block text-sm font-semibold text-white/80 mb-2"
+            >
+              Senha
+            </label>
             <input 
+              id="password"
               type="password" 
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-normal"
+              placeholder="Digite a sua senha"
+              className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/30 outline-none transition-all focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 font-normal"
               required
+              disabled={loading}
+              autoComplete="current-password"
             />
           </div>
-          <button type="submit" className="w-full bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-primary-dark transition-colors">
-            Entrar
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-white text-[#0E12DF] hover:bg-white/95 focus:ring-4 focus:ring-white/20 outline-none font-bold py-4 rounded-2xl transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Entrando...' : 'Entrar no Painel'}
           </button>
         </form>
-        <div className="mt-6 text-center">
-          <Link to="/" className="text-sm text-gray-500 hover:text-primary font-bold">Voltar ao site</Link>
+        
+        <div className="mt-8 text-center border-t border-white/10 pt-6">
+          <Link 
+            to="/" 
+            className="inline-flex items-center gap-2 text-sm text-white/50 hover:text-white font-semibold transition-colors focus:ring-2 focus:ring-white/20 rounded-lg px-2 py-1 outline-none"
+          >
+            ← Voltar ao site
+          </Link>
         </div>
       </div>
     </div>
@@ -1886,7 +1941,14 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/projeto/:id" element={<ProjectDetail />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
