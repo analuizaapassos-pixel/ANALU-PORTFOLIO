@@ -35,9 +35,9 @@ const delete_from_cloudinary = async (url: string) => {
 
 app.use(express.json());
 
-// Database Setup (LibSQL for Turso)
+// Database Setup (LibSQL for Turso with a safe fallback to prevent fatal crashes if env vars are not loaded yet)
 const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || '',
+  url: process.env.TURSO_DATABASE_URL || 'file:portfolio_fallback.db',
   authToken: process.env.TURSO_AUTH_TOKEN || ''
 });
 
