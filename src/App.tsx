@@ -160,7 +160,7 @@ function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [currentExperienceIndex, setCurrentExperienceIndex] = useState(0);
-  const filters = ['Branding', 'Social Media', 'Fotografia'];
+  const filters = ['Branding', 'Social Media', 'Fotografia', 'Impressos'];
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -1354,6 +1354,7 @@ function Admin() {
                           <option value="Branding">Branding</option>
                           <option value="Social Media">Social Media</option>
                           <option value="Fotografia">Fotografia</option>
+                          <option value="Impressos">Impressos</option>
                         </select>
                       </div>
                       <div>
