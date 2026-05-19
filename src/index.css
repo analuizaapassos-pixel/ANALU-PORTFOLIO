@@ -51,3 +51,34 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   box-shadow: 0 0 20px rgba(14, 18, 223, 0.4);
   transform: translateY(-2px);
 }
+
+/* Rich Text Editor Placeholder */
+.rich-text-editor-content:empty:before {
+  content: attr(placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+  display: block; /* For empty element */
+}
+
+/* Rich Text Frontend Styling */
+.rich-text-content {
+  word-break: break-word;
+}
+
+.rich-text-content strong {
+  font-weight: 700;
+  color: #111827;
+}
+
+.rich-text-content em {
+  font-style: italic;
+}
+
+.rich-text-content u {
+  text-decoration: underline;
+}
+
+.rich-text-content p {
+  margin-bottom: 1.25rem;
+}
+

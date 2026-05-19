@@ -109,6 +109,98 @@ const DynamicIcon = ({ name, size = 24, className = "text-primary" }: { name: st
   return <IconComponent size={size} className={className} />;
 };
 
+interface RichTextEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}
+
+const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const isFocusedRef = useRef(false);
+
+  // Sync value from prop to editor innerHTML ONLY when the editor is NOT focused,
+  // or if the content is completely different, to prevent losing focus/cursor position.
+  useEffect(() => {
+    if (editorRef.current && !isFocusedRef.current) {
+      if (editorRef.current.innerHTML !== value) {
+        editorRef.current.innerHTML = value || '';
+      }
+    }
+  }, [value]);
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      let html = editorRef.current.innerHTML;
+      // Browser can insert empty <br> tags when empty
+      if (html === '<br>' || html === '<div><br></div>') {
+        html = '';
+      }
+      onChange(html);
+    }
+  };
+
+  const handleFocus = () => {
+    isFocusedRef.current = true;
+  };
+
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    handleInput();
+  };
+
+  const execCmd = (command: string) => {
+    document.execCommand(command, false, '');
+    handleInput();
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 bg-gray-50 border-b border-gray-200 p-2 text-gray-600">
+        <button
+          type="button"
+          onClick={() => execCmd('bold')}
+          className="p-2 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+          title="Negrito (Ctrl+B)"
+        >
+          <LucideIcons.Bold size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => execCmd('italic')}
+          className="p-2 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+          title="Itálico (Ctrl+I)"
+        >
+          <LucideIcons.Italic size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => execCmd('underline')}
+          className="p-2 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+          title="Sublinhado (Ctrl+U)"
+        >
+          <LucideIcons.Underline size={16} />
+        </button>
+      </div>
+
+      {/* Editable Area */}
+      <div
+        ref={editorRef}
+        contentEditable
+        onInput={handleInput}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        className="px-4 py-3 min-h-[150px] outline-none font-normal text-gray-800 focus:outline-none overflow-y-auto rich-text-editor-content"
+      />
+    </div>
+  );
+};
+
 const useIntersectionObserver = (options = {}) => {
   const [isIntersecting, setIsIntersecting] = useState(false);
   const ref = useRef<HTMLElement>(null);
@@ -1392,12 +1484,10 @@ function Admin() {
                         <div className="flex-1">
                           <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Bloco {index + 1} - {block.type === 'text' ? 'Texto' : 'Imagem'}</span>
                           {block.type === 'text' ? (
-                            <textarea 
+                            <RichTextEditor 
                               value={block.content} 
-                              onChange={e => updateBlockContent(index, e.target.value)}
+                              onChange={val => updateBlockContent(index, val)}
                               placeholder="Digite o texto aqui..."
-                              rows={3}
-                              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-normal resize-none"
                             />
                           ) : (
                             block.content ? (
@@ -1834,6 +1924,31 @@ function ProjectDetail() {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { id } = useParams();
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const allImages = project?.blocks?.filter((b: any) => b.type === 'image') || [];
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxIndex(null);
+      } else if (e.key === 'ArrowRight') {
+        setLightboxIndex((prev) => (prev !== null ? (prev + 1) % allImages.length : null));
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex((prev) => (prev !== null ? (prev - 1 + allImages.length) % allImages.length : null));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [lightboxIndex, allImages.length]);
 
   useEffect(() => {
     fetch(`/api/projects/${id}`)
@@ -1905,22 +2020,33 @@ function ProjectDetail() {
             if (group.type === 'text') {
               return (
                 <div key={index} className="max-w-4xl mx-auto w-full">
-                  <p className="text-xl md:text-2xl leading-relaxed text-gray-700 font-light whitespace-pre-wrap">
-                    {group.content}
-                  </p>
+                  <div 
+                    className="rich-text-content text-xl md:text-2xl leading-relaxed text-gray-700 font-light"
+                    dangerouslySetInnerHTML={{ __html: group.content }}
+                  />
                 </div>
               );
             } else if (group.type === 'imageGroup') {
               return (
-                <div key={index} className="flex flex-col w-full">
-                  {group.images.map((img: any, imgIndex: number) => (
-                    <img 
-                      key={imgIndex} 
-                      src={img.content || undefined} 
-                      alt={`Galeria ${index} - Imagem ${imgIndex}`} 
-                      className="w-full h-auto object-cover block" 
-                    />
-                  ))}
+                <div key={index} className="flex flex-col w-full gap-4 md:gap-6">
+                  {group.images.map((img: any, imgIndex: number) => {
+                    const globalIdx = allImages.findIndex((b: any) => b.content === img.content);
+                    return (
+                      <div 
+                        key={imgIndex}
+                        className="cursor-zoom-in overflow-hidden rounded-2xl group relative shadow-sm border border-gray-200/20 hover:shadow-lg hover:border-gray-300/30 transition-all duration-300"
+                        onClick={() => setLightboxIndex(globalIdx !== -1 ? globalIdx : null)}
+                      >
+                        <img 
+                          src={img.content || undefined} 
+                          alt={`Galeria ${index} - Imagem ${imgIndex}`} 
+                          className="w-full h-auto object-cover block group-hover:scale-[1.01] transition-transform duration-500" 
+                        />
+                        {/* Hover overlay for a sleek premium feel */}
+                        <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      </div>
+                    );
+                  })}
                 </div>
               );
             }
@@ -1931,6 +2057,85 @@ function ProjectDetail() {
           )}
         </div>
       </main>
+
+      {/* Lightbox Modal */}
+      {lightboxIndex !== null && allImages[lightboxIndex] && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md transition-all duration-300 animate-fade-in"
+          onClick={() => setLightboxIndex(null)}
+        >
+          {/* Style Block for Animations */}
+          <style>
+            {`
+              @keyframes fade-in {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
+              @keyframes scale-up {
+                from { transform: scale(0.95); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+              }
+              .animate-fade-in {
+                animation: fade-in 0.2s ease-out;
+              }
+              .animate-scale-up {
+                animation: scale-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+              }
+            `}
+          </style>
+
+          {/* Close Button */}
+          <button
+            onClick={() => setLightboxIndex(null)}
+            className="absolute top-6 right-6 z-[110] p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 cursor-pointer"
+            aria-label="Fechar"
+          >
+            <LucideIcons.X size={28} />
+          </button>
+
+          {/* Counter */}
+          <div className="absolute top-8 left-8 z-[110] text-white/80 font-bold tracking-wider text-sm select-none">
+            {lightboxIndex + 1} / {allImages.length}
+          </div>
+
+          {/* Prev Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex((prev) => (prev !== null ? (prev - 1 + allImages.length) % allImages.length : null));
+            }}
+            className="absolute left-6 z-[110] p-3 md:p-4 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 cursor-pointer"
+            aria-label="Imagem Anterior"
+          >
+            <LucideIcons.ChevronLeft size={36} />
+          </button>
+
+          {/* Active Image Container */}
+          <div 
+            className="max-w-[85vw] max-h-[85vh] flex items-center justify-center relative select-none animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+            key={lightboxIndex}
+          >
+            <img
+              src={allImages[lightboxIndex].content}
+              alt={`Galeria de imagens - item ${lightboxIndex + 1}`}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            />
+          </div>
+
+          {/* Next Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex((prev) => (prev !== null ? (prev + 1) % allImages.length : null));
+            }}
+            className="absolute right-6 z-[110] p-3 md:p-4 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 cursor-pointer"
+            aria-label="Próxima Imagem"
+          >
+            <LucideIcons.ChevronRight size={36} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
