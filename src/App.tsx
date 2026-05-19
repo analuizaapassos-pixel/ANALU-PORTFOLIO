@@ -345,8 +345,8 @@ function Home() {
       {/* Header */}
       <header className="fixed top-0 w-full bg-gradient-to-r from-[#0E12DF] to-[#0a0b1a] z-50 shadow-md">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <a href="#" className="font-heading font-bold text-2xl tracking-tight text-white">
-            ANALU<span className="text-white/70">.</span>
+          <a href="#" className="flex items-center">
+            <img src="/logo.png" alt="Analu" className="h-10 w-auto object-contain" />
           </a>
           
           {/* Desktop Nav */}
@@ -1759,8 +1759,8 @@ function ProjectDetail() {
     <div className="min-h-screen bg-transparent text-gray-900 font-sans">
       <header className="fixed top-0 w-full bg-gradient-to-r from-[#0E12DF] to-[#0a0b1a] z-50 shadow-md">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="font-heading font-bold text-2xl tracking-tight text-white">
-            ANALU<span className="text-white/70">.</span>
+          <Link to="/" className="flex items-center">
+            <img src="/logo.png" alt="Analu" className="h-10 w-auto object-contain" />
           </Link>
           <Link to="/" className="font-bold text-white/90 hover:text-white transition-colors flex items-center gap-2">
             <ArrowRight size={20} className="rotate-180" /> Voltar
