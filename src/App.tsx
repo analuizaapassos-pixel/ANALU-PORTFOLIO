@@ -773,6 +773,38 @@ function Admin() {
 
   const token = localStorage.getItem('admin_token');
 
+  // Security Form State
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleUpdateCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    if (newPassword !== confirmPassword) {
+      alert('As senhas não coincidem!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/credentials', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ username: newUsername, password: newPassword })
+      }).then(r => r.json());
+
+      if (res.success) {
+        alert('Credenciais atualizadas com sucesso! Você precisará fazer login novamente.');
+        handleLogout();
+      } else {
+        alert('Erro ao atualizar credenciais: ' + (res.error || 'Erro desconhecido'));
+      }
+    } catch (err) {
+      alert('Erro de conexão ao atualizar credenciais');
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (!token) {
       navigate('/login');
@@ -1089,7 +1121,7 @@ function Admin() {
           <span className="font-extrabold text-2xl tracking-tight">Painel Admin</span>
         </div>
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {['Sobre', 'Experiências', 'Trabalhos', 'Skills', 'Clientes', 'Contato/Rodapé'].map(tab => (
+          {['Sobre', 'Experiências', 'Trabalhos', 'Skills', 'Clientes', 'Contato/Rodapé', 'Segurança'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -1683,6 +1715,56 @@ function Admin() {
                 </div>
               )}
             </div>
+          </section>
+        )}
+
+        {activeTab === 'Segurança' && (
+          <section className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h2 className="text-2xl font-extrabold text-primary-dark mb-2">Segurança da Conta</h2>
+            <p className="text-gray-500 font-normal mb-6 text-sm">Altere as credenciais de login para acessar o painel administrativo</p>
+            
+            <form onSubmit={handleUpdateCredentials} className="space-y-6 max-w-lg">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Novo Usuário</label>
+                <input 
+                  type="text"
+                  value={newUsername}
+                  onChange={e => setNewUsername(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-normal"
+                  placeholder="Ex: analu_admin"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Nova Senha</label>
+                <input 
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-normal"
+                  placeholder="Mínimo 6 caracteres"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Confirmar Nova Senha</label>
+                <input 
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-normal"
+                  placeholder="Digite a senha novamente"
+                  required
+                />
+              </div>
+              <button 
+                type="submit"
+                disabled={loading}
+                className="bg-primary text-white font-bold py-2.5 px-6 rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Salvando...' : 'Salvar Novas Credenciais'}
+              </button>
+            </form>
           </section>
         )}
 

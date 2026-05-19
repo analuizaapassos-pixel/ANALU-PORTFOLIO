@@ -63,8 +63,9 @@ def index():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
-    # Usuário e senha fixos para o seu acesso único
-    if data.get('username') == 'analu' and data.get('password') == 'design2026':
+    admin_user = os.environ.get('ADMIN_USER', 'analu')
+    admin_pass = os.environ.get('ADMIN_PASS', 'design2026')
+    if data.get('username') == admin_user and data.get('password') == admin_pass:
         return jsonify({"token": "analu_token_secreto_123"})
     return jsonify({"error": "Credenciais inválidas"}), 401
 
