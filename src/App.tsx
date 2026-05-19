@@ -250,17 +250,8 @@ function Home() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [currentExperienceIndex, setCurrentExperienceIndex] = useState(0);
   const filters = ['Branding', 'Social Media', 'Fotografia', 'Impressos'];
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
   useEffect(() => {
     api.getProjects().then(setProjects);
@@ -313,37 +304,6 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-transparent text-gray-900 font-sans selection:bg-primary selection:text-white relative">
-      {/* Animated Background */}
-      <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-white">
-        <style>
-          {`
-            @keyframes float-slow {
-              0% { transform: translate(0, 0) scale(1); }
-              33% { transform: translate(5%, 5%) scale(1.05); }
-              66% { transform: translate(-5%, 10%) scale(0.95); }
-              100% { transform: translate(0, 0) scale(1); }
-            }
-            .animate-float-slow {
-              animation: float-slow 10s ease-in-out infinite;
-            }
-            .animate-float-slower {
-              animation: float-slow 15s ease-in-out infinite reverse;
-            }
-          `}
-        </style>
-        <div 
-          className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] transition-transform duration-700 ease-out"
-          style={{ transform: `translate(${mousePos.x * 0.05}px, ${mousePos.y * 0.05}px)` }}
-        >
-          <div className="w-full h-full bg-blue-300/20 rounded-full blur-[100px] animate-float-slow"></div>
-        </div>
-        <div 
-          className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] transition-transform duration-700 ease-out"
-          style={{ transform: `translate(${mousePos.x * -0.05}px, ${mousePos.y * -0.05}px)` }}
-        >
-          <div className="w-full h-full bg-cyan-200/20 rounded-full blur-[120px] animate-float-slower"></div>
-        </div>
-      </div>
 
       {/* Header */}
       <header className="fixed top-0 w-full bg-gradient-to-r from-[#0E12DF] to-[#0a0b1a] z-50 shadow-md">
@@ -1985,7 +1945,7 @@ function ProjectDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f4f4] text-gray-900 font-sans">
+    <div className="min-h-screen bg-transparent text-gray-900 font-sans">
       <header className="fixed top-0 w-full bg-gradient-to-r from-[#0E12DF] to-[#0a0b1a] z-50 shadow-md">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="font-heading font-bold text-2xl tracking-tight text-white">
@@ -2140,9 +2100,40 @@ function ProjectDetail() {
   );
 }
 
+const InteractiveBackground = () => {
+  const backdropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (backdropRef.current) {
+        backdropRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-white select-none">
+      <div 
+        ref={backdropRef}
+        className="absolute top-0 left-0 w-[45vw] h-[45vw] md:w-[35vw] md:h-[35vw] rounded-full blur-[80px] md:blur-[120px] transition-transform duration-500 ease-out will-change-transform"
+        style={{
+          background: 'radial-gradient(circle, rgba(14, 18, 223, 0.12) 0%, rgba(96, 165, 250, 0.04) 50%, rgba(255, 255, 255, 0) 100%)',
+          transform: 'translate3d(50vw, 50vh, 0) translate(-50%, -50%)'
+        }}
+      />
+    </div>
+  );
+};
+
 export default function App() {
   return (
     <BrowserRouter>
+      <InteractiveBackground />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/projeto/:id" element={<ProjectDetail />} />
