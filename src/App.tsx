@@ -381,7 +381,7 @@ function Home() {
 
         {/* Experiências Section */}
         {experiences.length > 0 && (
-          <FadeInSection id="experiencias" className="py-24 px-6 md:px-12 lg:px-24 bg-white overflow-hidden">
+          <FadeInSection id="experiencias" className="py-24 px-6 md:px-12 lg:px-24 bg-transparent overflow-hidden">
             <div className="max-w-6xl mx-auto w-full mb-16 flex flex-col items-start text-left">
               <h2 className="font-heading text-4xl md:text-5xl font-extrabold text-primary-dark w-full text-left">Experiências</h2>
             </div>
@@ -534,7 +534,7 @@ function Home() {
 
         {/* Logos Marquee Section */}
         {logos.length > 0 && (
-          <section className="py-16 bg-white overflow-hidden border-y border-gray-100">
+          <section className="py-16 bg-transparent overflow-hidden border-y border-gray-100/50">
             <div className="max-w-7xl mx-auto px-6 mb-8 text-center">
               <h3 className="font-heading text-2xl font-bold text-gray-400 uppercase tracking-widest">Marcas que já fiz parte da história</h3>
             </div>
@@ -556,7 +556,7 @@ function Home() {
 
         {/* Skills Section */}
         {skills.length > 0 && (
-          <FadeInSection id="skills" className="py-24 px-6 md:px-12 lg:px-24 bg-white">
+          <FadeInSection id="skills" className="py-24 px-6 md:px-12 lg:px-24 bg-transparent">
             <div className="max-w-6xl mx-auto w-full">
               <div className="flex flex-col items-start text-left mb-16">
                 <h2 className="font-heading text-4xl md:text-5xl font-extrabold text-primary-dark w-full text-left">Skills</h2>
