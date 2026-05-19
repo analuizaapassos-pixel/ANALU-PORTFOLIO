@@ -1,8 +1,6 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
 import { createClient } from '@libsql/client';
 import jwt from 'jsonwebtoken';
-import path from 'path';
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
 
@@ -37,10 +35,10 @@ const delete_from_cloudinary = async (url: string) => {
 
 app.use(express.json());
 
-// Database Setup (LibSQL for Turso or local SQLite)
+// Database Setup (LibSQL for Turso)
 const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || 'file:portfolio.db',
-  authToken: process.env.TURSO_AUTH_TOKEN
+  url: process.env.TURSO_DATABASE_URL || '',
+  authToken: process.env.TURSO_AUTH_TOKEN || ''
 });
 
 // Database schema initialization
@@ -540,32 +538,7 @@ app.put('/api/reorder/:type', authenticate, async (req, res) => {
   }
 });
 
-// Vite Middleware for Frontend / Local Running
-async function startServer() {
-  await initDb();
-
-  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  // Only run standard listener when not on Vercel
-  if (!process.env.VERCEL) {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  }
-}
-
-startServer();
+// Initialize database schema automatically on startup
+initDb();
 
 export default app;
