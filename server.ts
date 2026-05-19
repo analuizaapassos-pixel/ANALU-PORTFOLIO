@@ -1,9 +1,12 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import Database from 'better-sqlite3';
+import { createClient } from '@libsql/client';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { v2 as cloudinary } from 'cloudinary';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const PORT = 3000;
@@ -34,115 +37,128 @@ const delete_from_cloudinary = async (url: string) => {
 
 app.use(express.json());
 
-// Database Setup
-const db = new Database('portfolio.db');
-db.pragma('foreign_keys = ON');
+// Database Setup (LibSQL for Turso or local SQLite)
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || 'file:portfolio.db',
+  authToken: process.env.TURSO_AUTH_TOKEN
+});
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS projects (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT,
-    category TEXT,
-    cover_url TEXT,
-    tags TEXT
-  );
-  CREATE TABLE IF NOT EXISTS project_blocks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id INTEGER,
-    type TEXT,
-    content TEXT,
-    sort_order INTEGER,
-    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
-  );
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT
-  );
-  CREATE TABLE IF NOT EXISTS client_logos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    image_url TEXT,
-    name TEXT
-  );
-  CREATE TABLE IF NOT EXISTS experiences (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    company TEXT,
-    role TEXT,
-    logo_url TEXT
-  );
-  CREATE TABLE IF NOT EXISTS skills (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    category TEXT,
-    name TEXT,
-    description TEXT,
-    icon TEXT
-  );
-`);
+// Database schema initialization
+async function initDb() {
+  try {
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        category TEXT,
+        cover_url TEXT,
+        tags TEXT,
+        sort_order INTEGER DEFAULT 0,
+        subtitle TEXT
+      );
+    `);
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS project_blocks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        type TEXT,
+        content TEXT,
+        sort_order INTEGER,
+        FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+      );
+    `);
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      );
+    `);
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS client_logos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        image_url TEXT,
+        name TEXT
+      );
+    `);
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS experiences (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company TEXT,
+        role TEXT,
+        logo_url TEXT,
+        sort_order INTEGER DEFAULT 0
+      );
+    `);
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS skills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT,
+        name TEXT,
+        description TEXT,
+        icon TEXT,
+        sort_order INTEGER DEFAULT 0
+      );
+    `);
 
-try {
-  db.exec('ALTER TABLE experiences ADD COLUMN logo_url TEXT');
-} catch (e) {
-  // Column already exists
-}
+    // Column updates (tolerating existing columns in LibSQL)
+    try { await db.execute('ALTER TABLE experiences ADD COLUMN logo_url TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE projects ADD COLUMN sort_order INTEGER DEFAULT 0'); } catch (e) {}
+    try { await db.execute('ALTER TABLE projects ADD COLUMN subtitle TEXT'); } catch (e) {}
+    try { await db.execute('ALTER TABLE experiences ADD COLUMN sort_order INTEGER DEFAULT 0'); } catch (e) {}
+    try { await db.execute('ALTER TABLE skills ADD COLUMN sort_order INTEGER DEFAULT 0'); } catch (e) {}
 
-// Seed initial settings
-const aboutText = db.prepare('SELECT value FROM settings WHERE key = ?').get('about_text');
-if (!aboutText) {
-  db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(
-    'about_text', 
-    'Olá, eu sou a Analu. Sou designer gráfica apaixonada por criar identidades visuais com propósito e capturar a essência das marcas através da fotografia e do design.'
-  );
-}
-const profilePhoto = db.prepare('SELECT value FROM settings WHERE key = ?').get('profile_photo');
-if (!profilePhoto) {
-  db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(
-    'profile_photo', 
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80'
-  );
-}
+    // Seed initial settings
+    const aboutText = await db.execute({ sql: 'SELECT value FROM settings WHERE key = ?', args: ['about_text'] });
+    if (aboutText.rows.length === 0) {
+      await db.execute({
+        sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
+        args: ['about_text', 'Olá, eu sou a Analu. Sou designer gráfica apaixonada por criar identidades visuais com propósito e capturar a essência das marcas através da fotografia e do design.']
+      });
+    }
 
-// --- SCRIPT DE LIMPEZA ÚNICA (One-Time Wipe) ---
-try {
-  // Verifica se a limpeza já foi feita para não apagar dados reais no futuro
-  const hasWiped = db.prepare("SELECT value FROM settings WHERE key = 'test_data_wiped'").get();
-  
-  if (!hasWiped) {
-    // Apaga apenas as tabelas solicitadas (verifique os nomes exatos das suas tabelas de skills e experiences)
-    db.prepare('DELETE FROM client_logos').run();
-    
-    // Deleta experiences se a tabela existir
-    try { db.prepare('DELETE FROM experiences').run(); } catch(e) {}
-    
-    // Deleta skills se a tabela existir
-    try { db.prepare('DELETE FROM skills').run(); } catch(e) {}
-    
-    // Marca na tabela settings que a limpeza foi concluída
-    db.prepare("INSERT INTO settings (key, value) VALUES ('test_data_wiped', 'true')").run();
-    
-    console.log("🧹 FAXINA CONCLUÍDA: Logos, Experiências e Skills de teste foram removidos!");
+    const profilePhoto = await db.execute({ sql: 'SELECT value FROM settings WHERE key = ?', args: ['profile_photo'] });
+    if (profilePhoto.rows.length === 0) {
+      await db.execute({
+        sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
+        args: ['profile_photo', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80']
+      });
+    }
+
+    // Seed admin credentials
+    const adminUser = await db.execute({ sql: 'SELECT value FROM settings WHERE key = ?', args: ['admin_user'] });
+    if (adminUser.rows.length === 0) {
+      await db.execute({
+        sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
+        args: ['admin_user', process.env.ADMIN_USER || 'admin']
+      });
+    }
+
+    const adminPass = await db.execute({ sql: 'SELECT value FROM settings WHERE key = ?', args: ['admin_pass'] });
+    if (adminPass.rows.length === 0) {
+      await db.execute({
+        sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
+        args: ['admin_pass', process.env.ADMIN_PASS || 'analu2026']
+      });
+    }
+
+    // Seed cleanup logic
+    const hasWiped = await db.execute({ sql: "SELECT value FROM settings WHERE key = 'test_data_wiped'", args: [] });
+    if (hasWiped.rows.length === 0) {
+      await db.execute('DELETE FROM client_logos');
+      try { await db.execute('DELETE FROM experiences'); } catch(e) {}
+      try { await db.execute('DELETE FROM skills'); } catch(e) {}
+      await db.execute({ sql: "INSERT INTO settings (key, value) VALUES ('test_data_wiped', 'true')", args: [] });
+      console.log("🧹 FAXINA CONCLUÍDA: Logos, Experiências e Skills de teste foram removidos!");
+    }
+  } catch (err) {
+    console.error("Erro na inicialização do banco:", err);
   }
-} catch (error) {
-  console.error("Erro no script de limpeza:", error);
 }
-
-// --- SCRIPT DE LIMPEZA ÚNICA LOGOS (One-Time Wipe) ---
-try {
-  const hasWipedLogos = db.prepare("SELECT value FROM settings WHERE key = 'logos_wiped_v1'").get();
-  
-  if (!hasWipedLogos) {
-    db.prepare('DELETE FROM client_logos').run();
-    db.prepare("INSERT INTO settings (key, value) VALUES ('logos_wiped_v1', 'true')").run();
-    console.log("🧹 FAXINA CONCLUÍDA: Tabela de logos de clientes limpa!");
-  }
-} catch (error) {
-  console.error("Erro no script de limpeza de logos:", error);
-}
-
-// Add new columns for sort_order and subtitle
-try { db.exec('ALTER TABLE projects ADD COLUMN sort_order INTEGER DEFAULT 0'); } catch (e) {}
-try { db.exec('ALTER TABLE projects ADD COLUMN subtitle TEXT'); } catch (e) {}
-try { db.exec('ALTER TABLE experiences ADD COLUMN sort_order INTEGER DEFAULT 0'); } catch (e) {}
-try { db.exec('ALTER TABLE skills ADD COLUMN sort_order INTEGER DEFAULT 0'); } catch (e) {}
-// ------------------------------------------------
 
 // Authentication Middleware
 const authenticate = (req: any, res: any, next: any) => {
@@ -161,102 +177,174 @@ const authenticate = (req: any, res: any, next: any) => {
 };
 
 // API Routes
-app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
-  const adminUser = process.env.ADMIN_USER || 'admin';
-  const adminPass = process.env.ADMIN_PASS || 'analu2026';
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    const dbUserRes = await db.execute({ sql: 'SELECT value FROM settings WHERE key = ?', args: ['admin_user'] });
+    const dbPassRes = await db.execute({ sql: 'SELECT value FROM settings WHERE key = ?', args: ['admin_pass'] });
 
-  if (username === adminUser && password === adminPass) {
-    const token = jwt.sign({ user: username }, SECRET_KEY, { expiresIn: '24h' });
-    res.json({ token });
-  } else {
-    res.status(401).json({ error: 'Credenciais inválidas' });
+    const adminUser = (dbUserRes.rows[0]?.value as string) || process.env.ADMIN_USER || 'admin';
+    const adminPass = (dbPassRes.rows[0]?.value as string) || process.env.ADMIN_PASS || 'analu2026';
+
+    if (username === adminUser && password === adminPass) {
+      const token = jwt.sign({ user: username }, SECRET_KEY, { expiresIn: '24h' });
+      res.json({ token });
+    } else {
+      res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro no servidor' });
   }
 });
 
-app.get('/api/settings', (req, res) => {
-  const settings = db.prepare('SELECT * FROM settings').all() as any[];
-  const result = settings.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {});
-  res.json(result);
+// Update credentials route
+app.put('/api/admin/credentials', authenticate, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
+    }
+
+    await db.execute({ sql: 'UPDATE settings SET value = ? WHERE key = ?', args: [username, 'admin_user'] });
+    await db.execute({ sql: 'UPDATE settings SET value = ? WHERE key = ?', args: [password, 'admin_pass'] });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao atualizar credenciais' });
+  }
 });
 
-app.put('/api/settings', authenticate, (req, res) => {
-  const { 
-    about_text, profile_photo, 
-    contact_email, contact_linkedin, contact_instagram, 
-    contact_behance, contact_whatsapp, footer_text 
-  } = req.body;
-  
-  const updateSetting = (key: string, value: any) => {
-    if (value !== undefined) {
-      const exists = db.prepare('SELECT key FROM settings WHERE key = ?').get(key);
-      if (exists) {
-        db.prepare('UPDATE settings SET value = ? WHERE key = ?').run(value, key);
-      } else {
-        db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(key, value);
+app.get('/api/settings', async (req, res) => {
+  try {
+    const settings = await db.execute('SELECT * FROM settings');
+    const result = settings.rows.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao obter configurações' });
+  }
+});
+
+app.put('/api/settings', authenticate, async (req, res) => {
+  try {
+    const { 
+      about_text, profile_photo, 
+      contact_email, contact_linkedin, contact_instagram, 
+      contact_behance, contact_whatsapp, footer_text 
+    } = req.body;
+    
+    const updateSetting = async (key: string, value: any) => {
+      if (value !== undefined) {
+        const exists = await db.execute({ sql: 'SELECT key FROM settings WHERE key = ?', args: [key] });
+        if (exists.rows.length > 0) {
+          await db.execute({ sql: 'UPDATE settings SET value = ? WHERE key = ?', args: [value, key] });
+        } else {
+          await db.execute({ sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', args: [key, value] });
+        }
+      }
+    };
+
+    await updateSetting('about_text', about_text);
+    await updateSetting('profile_photo', profile_photo);
+    await updateSetting('contact_email', contact_email);
+    await updateSetting('contact_linkedin', contact_linkedin);
+    await updateSetting('contact_instagram', contact_instagram);
+    await updateSetting('contact_behance', contact_behance);
+    await updateSetting('contact_whatsapp', contact_whatsapp);
+    await updateSetting('footer_text', footer_text);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao atualizar configurações' });
+  }
+});
+
+app.get('/api/projects', async (req, res) => {
+  try {
+    const projects = await db.execute('SELECT * FROM projects ORDER BY sort_order ASC, id DESC');
+    res.json(projects.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao obter projetos' });
+  }
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+  try {
+    const project = await db.execute({ sql: 'SELECT * FROM projects WHERE id = ?', args: [req.params.id] });
+    if (project.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    
+    const blocks = await db.execute({ sql: 'SELECT * FROM project_blocks WHERE project_id = ? ORDER BY sort_order ASC', args: [req.params.id] });
+    
+    res.json({ ...(project.rows[0] as any), blocks: blocks.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao obter projeto' });
+  }
+});
+
+app.post('/api/projects', authenticate, async (req, res) => {
+  try {
+    const { title, subtitle, category, cover_url, tags, blocks } = req.body;
+    
+    const info = await db.execute({
+      sql: 'INSERT INTO projects (title, subtitle, category, cover_url, tags) VALUES (?, ?, ?, ?, ?)',
+      args: [title, subtitle || '', category, cover_url, tags || '']
+    });
+    
+    const projectId = info.lastInsertRowid;
+    if (projectId === undefined) throw new Error('Falha ao obter ID do projeto inserido');
+    
+    if (blocks && Array.isArray(blocks)) {
+      for (let index = 0; index < blocks.length; index++) {
+        const b = blocks[index];
+        await db.execute({
+          sql: 'INSERT INTO project_blocks (project_id, type, content, sort_order) VALUES (?, ?, ?, ?)',
+          args: [Number(projectId), b.type, b.content, index]
+        });
       }
     }
-  };
-
-  updateSetting('about_text', about_text);
-  updateSetting('profile_photo', profile_photo);
-  updateSetting('contact_email', contact_email);
-  updateSetting('contact_linkedin', contact_linkedin);
-  updateSetting('contact_instagram', contact_instagram);
-  updateSetting('contact_behance', contact_behance);
-  updateSetting('contact_whatsapp', contact_whatsapp);
-  updateSetting('footer_text', footer_text);
-
-  res.json({ success: true });
-});
-
-app.get('/api/projects', (req, res) => {
-  const projects = db.prepare('SELECT * FROM projects ORDER BY sort_order ASC, id DESC').all();
-  res.json(projects);
-});
-
-app.get('/api/projects/:id', (req, res) => {
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
-  if (!project) return res.status(404).json({ error: 'Not found' });
-  const blocks = db.prepare('SELECT * FROM project_blocks WHERE project_id = ? ORDER BY sort_order ASC').all(req.params.id);
-  res.json({ ...(project as any), blocks });
-});
-
-app.post('/api/projects', authenticate, (req, res) => {
-  const { title, subtitle, category, cover_url, tags, blocks } = req.body;
-  
-  const stmt = db.prepare('INSERT INTO projects (title, subtitle, category, cover_url, tags) VALUES (?, ?, ?, ?, ?)');
-  const info = stmt.run(title, subtitle || '', category, cover_url, tags || '');
-  const projectId = info.lastInsertRowid;
-  
-  if (blocks && Array.isArray(blocks)) {
-    const blockStmt = db.prepare('INSERT INTO project_blocks (project_id, type, content, sort_order) VALUES (?, ?, ?, ?)');
-    blocks.forEach((b: any, index: number) => {
-      blockStmt.run(projectId, b.type, b.content, index);
-    });
+    
+    res.json({ success: true, id: Number(projectId) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao criar projeto' });
   }
-  
-  res.json({ success: true, id: projectId });
 });
 
-app.put('/api/projects/:id', authenticate, (req, res) => {
-  const { title, subtitle, category, cover_url, tags, blocks } = req.body;
-  const projectId = req.params.id;
-  
-  db.prepare('UPDATE projects SET title=?, subtitle=?, category=?, cover_url=?, tags=? WHERE id=?').run(title, subtitle || '', category, cover_url, tags || '', projectId);
-  
-  // Delete old blocks
-  db.prepare('DELETE FROM project_blocks WHERE project_id=?').run(projectId);
-  
-  // Insert new blocks
-  if (blocks && Array.isArray(blocks)) {
-    const blockStmt = db.prepare('INSERT INTO project_blocks (project_id, type, content, sort_order) VALUES (?, ?, ?, ?)');
-    blocks.forEach((b: any, index: number) => {
-      blockStmt.run(projectId, b.type, b.content, index);
+app.put('/api/projects/:id', authenticate, async (req, res) => {
+  try {
+    const { title, subtitle, category, cover_url, tags, blocks } = req.body;
+    const projectId = req.params.id;
+    
+    await db.execute({
+      sql: 'UPDATE projects SET title=?, subtitle=?, category=?, cover_url=?, tags=? WHERE id=?',
+      args: [title, subtitle || '', category, cover_url, tags || '', projectId]
     });
+    
+    // Delete old blocks
+    await db.execute({ sql: 'DELETE FROM project_blocks WHERE project_id=?', args: [projectId] });
+    
+    // Insert new blocks
+    if (blocks && Array.isArray(blocks)) {
+      for (let index = 0; index < blocks.length; index++) {
+        const b = blocks[index];
+        await db.execute({
+          sql: 'INSERT INTO project_blocks (project_id, type, content, sort_order) VALUES (?, ?, ?, ?)',
+          args: [projectId, b.type, b.content, index]
+        });
+      }
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao atualizar projeto' });
   }
-  
-  res.json({ success: true });
 });
 
 app.delete('/api/projects/:id', authenticate, async (req, res) => {
@@ -265,45 +353,59 @@ app.delete('/api/projects/:id', authenticate, async (req, res) => {
   if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
   
   try {
-    const project = db.prepare('SELECT cover_url FROM projects WHERE id = ?').get(id) as any;
+    const projectRes = await db.execute({ sql: 'SELECT cover_url FROM projects WHERE id = ?', args: [id] });
+    const project = projectRes.rows[0];
     if (project && project.cover_url) {
-      await delete_from_cloudinary(project.cover_url);
+      await delete_from_cloudinary(project.cover_url as string);
     }
     
-    const blocks = db.prepare('SELECT content, type FROM project_blocks WHERE project_id = ?').all(id) as any[];
+    const blocksRes = await db.execute({ sql: 'SELECT content, type FROM project_blocks WHERE project_id = ?', args: [id] });
+    const blocks = blocksRes.rows;
     for (const block of blocks) {
       if (block.type === 'image' && block.content) {
-        await delete_from_cloudinary(block.content);
+        await delete_from_cloudinary(block.content as string);
       }
     }
 
     // Explicitly delete associated blocks first (cascade fallback)
-    db.prepare('DELETE FROM project_blocks WHERE project_id = ?').run(id);
+    await db.execute({ sql: 'DELETE FROM project_blocks WHERE project_id = ?', args: [id] });
     
     // Delete from database
-    db.prepare('DELETE FROM projects WHERE id = ?').run(id);
+    await db.execute({ sql: 'DELETE FROM projects WHERE id = ?', args: [id] });
     
     res.json({ success: true, deletedId: id });
   } catch (error) {
     console.error('Error deleting project:', error);
-    res.status(500).json({ error: 'Internal server error during deletion' });
+    res.status(500).json({ error: 'Erro interno ao deletar projeto' });
   }
 });
 
 // Logos API Routes
-app.get('/api/logos', (req, res) => {
-  const logos = db.prepare('SELECT * FROM client_logos ORDER BY id DESC').all();
-  res.json(logos);
+app.get('/api/logos', async (req, res) => {
+  try {
+    const logos = await db.execute('SELECT * FROM client_logos ORDER BY id DESC');
+    res.json(logos.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao obter logos' });
+  }
 });
 
-app.post('/api/logos', authenticate, (req, res) => {
-  const { image_url, name } = req.body;
-  if (!image_url) return res.status(400).json({ error: 'Image URL is required' });
-  
-  const stmt = db.prepare('INSERT INTO client_logos (image_url, name) VALUES (?, ?)');
-  const info = stmt.run(image_url, name || '');
-  
-  res.json({ success: true, id: info.lastInsertRowid, url: image_url });
+app.post('/api/logos', authenticate, async (req, res) => {
+  try {
+    const { image_url, name } = req.body;
+    if (!image_url) return res.status(400).json({ error: 'Image URL is required' });
+    
+    const info = await db.execute({
+      sql: 'INSERT INTO client_logos (image_url, name) VALUES (?, ?)',
+      args: [image_url, name || '']
+    });
+    
+    res.json({ success: true, id: Number(info.lastInsertRowid), url: image_url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao adicionar logo' });
+  }
 });
 
 app.delete('/api/logos/:id', authenticate, async (req, res) => {
@@ -312,33 +414,46 @@ app.delete('/api/logos/:id', authenticate, async (req, res) => {
   if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
   
   try {
-    const logo = db.prepare('SELECT image_url FROM client_logos WHERE id = ?').get(id) as any;
+    const logoRes = await db.execute({ sql: 'SELECT image_url FROM client_logos WHERE id = ?', args: [id] });
+    const logo = logoRes.rows[0];
     if (logo && logo.image_url) {
-      await delete_from_cloudinary(logo.image_url);
+      await delete_from_cloudinary(logo.image_url as string);
     }
 
-    db.prepare('DELETE FROM client_logos WHERE id = ?').run(id);
+    await db.execute({ sql: 'DELETE FROM client_logos WHERE id = ?', args: [id] });
     res.json({ success: true, deletedId: id });
   } catch (error) {
     console.error('Error deleting logo:', error);
-    res.status(500).json({ error: 'Internal server error during deletion' });
+    res.status(500).json({ error: 'Erro interno ao deletar logo' });
   }
 });
 
 // Experiences API Routes
-app.get('/api/experiences', (req, res) => {
-  const experiences = db.prepare('SELECT * FROM experiences ORDER BY sort_order ASC, id ASC').all();
-  res.json(experiences);
+app.get('/api/experiences', async (req, res) => {
+  try {
+    const experiences = await db.execute('SELECT * FROM experiences ORDER BY sort_order ASC, id ASC');
+    res.json(experiences.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao obter experiências' });
+  }
 });
 
-app.post('/api/experiences', authenticate, (req, res) => {
-  const { company, role, logo_url } = req.body;
-  if (!company || !role) return res.status(400).json({ error: 'Company and role are required' });
-  
-  const stmt = db.prepare('INSERT INTO experiences (company, role, logo_url) VALUES (?, ?, ?)');
-  const info = stmt.run(company, role, logo_url || '');
-  
-  res.json({ success: true, id: info.lastInsertRowid });
+app.post('/api/experiences', authenticate, async (req, res) => {
+  try {
+    const { company, role, logo_url } = req.body;
+    if (!company || !role) return res.status(400).json({ error: 'Company and role are required' });
+    
+    const info = await db.execute({
+      sql: 'INSERT INTO experiences (company, role, logo_url) VALUES (?, ?, ?)',
+      args: [company, role, logo_url || '']
+    });
+    
+    res.json({ success: true, id: Number(info.lastInsertRowid) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao adicionar experiência' });
+  }
 });
 
 app.delete('/api/experiences/:id', authenticate, async (req, res) => {
@@ -347,50 +462,63 @@ app.delete('/api/experiences/:id', authenticate, async (req, res) => {
   if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
   
   try {
-    const exp = db.prepare('SELECT logo_url FROM experiences WHERE id = ?').get(id) as any;
+    const expRes = await db.execute({ sql: 'SELECT logo_url FROM experiences WHERE id = ?', args: [id] });
+    const exp = expRes.rows[0];
     if (exp && exp.logo_url) {
-      await delete_from_cloudinary(exp.logo_url);
+      await delete_from_cloudinary(exp.logo_url as string);
     }
 
-    db.prepare('DELETE FROM experiences WHERE id = ?').run(id);
+    await db.execute({ sql: 'DELETE FROM experiences WHERE id = ?', args: [id] });
     res.json({ success: true, deletedId: id });
   } catch (error) {
     console.error('Error deleting experience:', error);
-    res.status(500).json({ error: 'Internal server error during deletion' });
+    res.status(500).json({ error: 'Erro interno ao deletar experiência' });
   }
 });
 
 // Skills API Routes
-app.get('/api/skills', (req, res) => {
-  const skills = db.prepare('SELECT * FROM skills ORDER BY sort_order ASC, id ASC').all();
-  res.json(skills);
+app.get('/api/skills', async (req, res) => {
+  try {
+    const skills = await db.execute('SELECT * FROM skills ORDER BY sort_order ASC, id ASC');
+    res.json(skills.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao obter skills' });
+  }
 });
 
-app.post('/api/skills', authenticate, (req, res) => {
-  const { category, name, description, icon } = req.body;
-  if (!category || !name || !icon) return res.status(400).json({ error: 'Category, name and icon are required' });
-  
-  const stmt = db.prepare('INSERT INTO skills (category, name, description, icon) VALUES (?, ?, ?, ?)');
-  const info = stmt.run(category, name, description || '', icon);
-  
-  res.json({ success: true, id: info.lastInsertRowid });
+app.post('/api/skills', authenticate, async (req, res) => {
+  try {
+    const { category, name, description, icon } = req.body;
+    if (!category || !name || !icon) return res.status(400).json({ error: 'Category, name and icon are required' });
+    
+    const info = await db.execute({
+      sql: 'INSERT INTO skills (category, name, description, icon) VALUES (?, ?, ?, ?)',
+      args: [category, name, description || '', icon]
+    });
+    
+    res.json({ success: true, id: Number(info.lastInsertRowid) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao adicionar skill' });
+  }
 });
 
-app.delete('/api/skills/:id', authenticate, (req, res) => {
+app.delete('/api/skills/:id', authenticate, async (req, res) => {
   const id = Number(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
   
   try {
-    db.prepare('DELETE FROM skills WHERE id = ?').run(id);
+    await db.execute({ sql: 'DELETE FROM skills WHERE id = ?', args: [id] });
     res.json({ success: true, deletedId: id });
   } catch (error) {
     console.error('Error deleting skill:', error);
-    res.status(500).json({ error: 'Internal server error during deletion' });
+    res.status(500).json({ error: 'Erro interno ao deletar skill' });
   }
 });
 
 // Reorder API Route
-app.put('/api/reorder/:type', authenticate, (req, res) => {
+app.put('/api/reorder/:type', authenticate, async (req, res) => {
   const { type } = req.params;
   const { items } = req.body;
   
@@ -398,24 +526,25 @@ app.put('/api/reorder/:type', authenticate, (req, res) => {
     return res.status(400).json({ error: 'Invalid type' });
   }
 
-  const stmt = db.prepare(`UPDATE ${type} SET sort_order = ? WHERE id = ?`);
-  const updateMany = db.transaction((items) => {
-    for (const item of items) {
-      stmt.run(item.sort_order, item.id);
-    }
-  });
-
   try {
-    updateMany(items);
+    const queries = items.map((item: any) => ({
+      sql: `UPDATE ${type} SET sort_order = ? WHERE id = ?`,
+      args: [item.sort_order, item.id]
+    }));
+
+    await db.batch(queries, "write");
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to reorder' });
+    console.error(err);
+    res.status(500).json({ error: 'Falha ao reordenar itens' });
   }
 });
 
-// Vite Middleware for Frontend
+// Vite Middleware for Frontend / Local Running
 async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
+  await initDb();
+
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -429,9 +558,14 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  // Only run standard listener when not on Vercel
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
 }
 
 startServer();
+
+export default app;
