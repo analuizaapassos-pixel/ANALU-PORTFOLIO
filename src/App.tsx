@@ -149,6 +149,44 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
     handleInput();
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+
+    if (html) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+
+      // Remove style, class, face, size, and color attributes to strip pasted font properties and formatting overrides
+      const allElements = tempDiv.getElementsByTagName('*');
+      for (let i = 0; i < allElements.length; i++) {
+        allElements[i].removeAttribute('style');
+        allElements[i].removeAttribute('class');
+        allElements[i].removeAttribute('face');
+        allElements[i].removeAttribute('size');
+        allElements[i].removeAttribute('color');
+      }
+
+      // Also clean up font tags if any
+      const fontTags = tempDiv.getElementsByTagName('font');
+      while (fontTags.length > 0) {
+        const parent = fontTags[0].parentNode;
+        if (parent) {
+          while (fontTags[0].firstChild) {
+            parent.insertBefore(fontTags[0].firstChild, fontTags[0]);
+          }
+          parent.removeChild(fontTags[0]);
+        }
+      }
+
+      document.execCommand('insertHTML', false, tempDiv.innerHTML);
+    } else if (text) {
+      document.execCommand('insertText', false, text);
+    }
+    handleInput();
+  };
+
   const execCmd = (command: string) => {
     document.execCommand(command, false, '');
     handleInput();
@@ -194,6 +232,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
         onInput={handleInput}
         onFocus={handleFocus}
         onBlur={handleBlur}
+        onPaste={handlePaste}
         placeholder={placeholder}
         className="px-4 py-3 min-h-[150px] outline-none font-normal text-gray-800 focus:outline-none overflow-y-auto rich-text-editor-content"
       />
