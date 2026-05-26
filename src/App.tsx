@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useParams, useLocation } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import { Instagram, Linkedin, ArrowRight, Upload, Trash2, LogOut, Menu, X, ArrowUp } from 'lucide-react';
 
@@ -307,11 +307,23 @@ function Home() {
       } else {
         setShowScrollTop(false);
       }
+      sessionStorage.setItem('homeScrollPosition', window.scrollY.toString());
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      const savedY = sessionStorage.getItem('homeScrollPosition');
+      if (savedY) {
+        setTimeout(() => {
+          window.scrollTo(0, parseInt(savedY, 10));
+        }, 50);
+      }
+    }
+  }, [projects]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1812,7 +1824,7 @@ function ProjectDetail() {
     }
   }
 
-  const isMasonry = project?.category === 'Fotografia' || project?.category === 'Social Media';
+  const isMasonry = project?.category === 'Fotografia' || project?.category === 'Social Media' || project?.category === 'Impressos';
 
   return (
     <div className="min-h-screen bg-transparent text-gray-900 font-sans">
@@ -2021,9 +2033,22 @@ const InteractiveBackground = () => {
   );
 };
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (pathname !== '/') {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <InteractiveBackground />
       <Routes>
         <Route path="/" element={<Home />} />
