@@ -418,70 +418,129 @@ function Home() {
         {experiences.length > 0 && (
           <FadeInSection id="experiencias" className="py-24 px-6 md:px-12 lg:px-24 bg-transparent overflow-hidden">
             <div className="max-w-6xl mx-auto w-full mb-16 flex flex-col items-start text-left">
-              <h2 className="font-heading text-4xl md:text-5xl font-extrabold text-primary-dark w-full text-left">Experiências</h2>
+              <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-extrabold text-primary-dark w-full text-left break-words whitespace-normal">Experiências</h2>
             </div>
             
-            <div className="relative w-full max-w-6xl mx-auto overflow-hidden py-12 flex items-center justify-center">
-              <button 
-                onClick={prevExperience}
-                className="absolute left-0 md:left-4 z-20 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors shadow-sm"
-                aria-label="Anterior"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-              </button>
-
-              {/* Central Line */}
-              <div className="absolute top-1/2 left-12 right-12 h-1 bg-gray-200 -translate-y-1/2 z-0 hidden md:block"></div>
+            <div className="relative w-full max-w-6xl mx-auto py-12 flex flex-col items-center justify-center">
               
-              {/* Carousel Container */}
-              <div className="flex justify-center items-center gap-4 md:gap-8 overflow-hidden w-full px-12 md:px-20">
-                {visibleExperiences.map((exp, index) => (
-                  <div key={`${exp.id}-${index}`} className="flex-shrink-0 w-full md:w-80 px-4 relative flex flex-col justify-center h-64">
-                    
-                    {/* Top Content (Even index) */}
-                    {index % 2 === 0 && (
-                      <div className="absolute top-0 left-0 w-full text-center px-4 hidden md:block">
-                        <h3 className="font-bold text-xl text-gray-900 mb-1">{exp.company}</h3>
-                        <p className="text-primary font-medium text-sm">{exp.role}</p>
-                      </div>
-                    )}
+              {/* Desktop View: Horizontal Timeline */}
+              <div className="hidden md:flex relative w-full items-center justify-center">
+                <button 
+                  onClick={prevExperience}
+                  className="absolute left-0 md:left-4 z-20 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors shadow-sm cursor-pointer"
+                  aria-label="Anterior"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
 
-                    {/* Center Node (Logo) */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                      {exp.logo_url ? (
-                        <img src={exp.logo_url} alt={exp.company} className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md bg-white hover:-translate-y-1 hover:shadow-lg transition-all duration-300" />
-                      ) : (
-                        <div className="w-16 h-16 rounded-full border-4 border-white shadow-md bg-primary flex items-center justify-center text-white font-bold text-xl hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-                          {exp.company.charAt(0)}
+                {/* Central Line */}
+                <div className="absolute top-1/2 left-12 right-12 h-1 bg-gray-200 -translate-y-1/2 z-0 hidden md:block"></div>
+                
+                {/* Carousel Container */}
+                <div className="flex justify-center items-center gap-4 md:gap-8 overflow-hidden w-full px-12 md:px-20">
+                  {visibleExperiences.map((exp, index) => (
+                    <div key={`${exp.id}-${index}`} className="flex-shrink-0 w-full md:w-80 px-4 relative flex flex-col justify-center h-64">
+                      
+                      {/* Top Content (Even index) */}
+                      {index % 2 === 0 && (
+                        <div className="absolute top-0 left-0 w-full text-center px-4 hidden md:block">
+                          <h3 className="font-bold text-xl text-gray-900 mb-1">{exp.company}</h3>
+                          <p className="text-primary font-medium text-sm">{exp.role}</p>
                         </div>
                       )}
-                    </div>
 
-                    {/* Bottom Content (Odd index) */}
-                    {index % 2 !== 0 && (
-                      <div className="absolute bottom-0 left-0 w-full text-center px-4 hidden md:block">
-                        <h3 className="font-bold text-xl text-gray-900 mb-1">{exp.company}</h3>
+                      {/* Center Node (Logo) */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                        {exp.logo_url ? (
+                          <img src={exp.logo_url} alt={exp.company} className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md bg-white hover:-translate-y-1 hover:shadow-lg transition-all duration-300" />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full border-4 border-white shadow-md bg-primary flex items-center justify-center text-white font-bold text-xl hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                            {exp.company.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom Content (Odd index) */}
+                      {index % 2 !== 0 && (
+                        <div className="absolute bottom-0 left-0 w-full text-center px-4 hidden md:block">
+                          <h3 className="font-bold text-xl text-gray-900 mb-1">{exp.company}</h3>
+                          <p className="text-primary font-medium text-sm">{exp.role}</p>
+                        </div>
+                      )}
+
+                      {/* Mobile Content (Always visible below logo on small screens) */}
+                      <div className="absolute bottom-4 left-0 w-full text-center px-4 md:hidden">
+                        <h3 className="font-bold text-lg text-gray-900 mb-1">{exp.company}</h3>
                         <p className="text-primary font-medium text-sm">{exp.role}</p>
                       </div>
-                    )}
 
-                    {/* Mobile Content (Always visible below logo on small screens) */}
-                    <div className="absolute bottom-4 left-0 w-full text-center px-4 md:hidden">
-                      <h3 className="font-bold text-lg text-gray-900 mb-1">{exp.company}</h3>
-                      <p className="text-primary font-medium text-sm">{exp.role}</p>
                     </div>
+                  ))}
+                </div>
 
-                  </div>
-                ))}
+                <button 
+                  onClick={nextExperience}
+                  className="absolute right-0 md:right-4 z-20 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors shadow-sm cursor-pointer"
+                  aria-label="Próximo"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
               </div>
 
-              <button 
-                onClick={nextExperience}
-                className="absolute right-0 md:right-4 z-20 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors shadow-sm"
-                aria-label="Próximo"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-              </button>
+              {/* Mobile View: Vertical Timeline */}
+              <div className="flex md:hidden flex-col items-center gap-6 w-full relative py-6">
+                {/* Up Button */}
+                <button 
+                  onClick={prevExperience}
+                  className="p-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-full text-gray-600 shadow-md transition-all active:scale-95 z-20 cursor-pointer"
+                  aria-label="Anterior"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m18 15-6-6-6 6"/>
+                  </svg>
+                </button>
+
+                {/* Vertical List of 3 items */}
+                <div className="flex flex-col gap-6 items-center w-full py-2 relative">
+                  {visibleExperiences.map((exp, index) => (
+                    <div key={`${exp.id}-${index}`} className="flex items-center gap-4 w-full max-w-sm relative px-4 py-2">
+                      {/* Connector Line (between circles) */}
+                      {index < visibleExperiences.length - 1 && (
+                        <div className="absolute left-[40px] top-14 bottom-[-24px] w-0.5 bg-gray-200 -z-10"></div>
+                      )}
+                      
+                      {/* Circle Icon */}
+                      <div className="flex-shrink-0 w-12 h-12 relative z-10">
+                        {exp.logo_url ? (
+                          <img src={exp.logo_url} alt={exp.company} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md bg-white" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full border-2 border-white shadow-md bg-primary flex items-center justify-center text-white font-bold text-lg">
+                            {exp.company.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Card Text */}
+                      <div className="flex-grow bg-white border border-gray-100 p-4 rounded-2xl shadow-sm text-left">
+                        <h3 className="font-bold text-base text-gray-900 mb-0.5">{exp.company}</h3>
+                        <p className="text-primary font-medium text-xs">{exp.role}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Down Button */}
+                <button 
+                  onClick={nextExperience}
+                  className="p-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-full text-gray-600 shadow-md transition-all active:scale-95 z-20 cursor-pointer"
+                  aria-label="Próximo"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </button>
+              </div>
+
             </div>
           </FadeInSection>
         )}
@@ -1772,12 +1831,12 @@ function ProjectDetail() {
         {/* Cover */}
         <div className="w-full h-[60vh] relative">
           <img src={project.cover_url || project.image_url || undefined} alt={project.title} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/30 flex items-end p-12">
+          <div className="absolute inset-0 bg-black/30 flex items-end p-6 sm:p-12">
             <div className="max-w-5xl mx-auto w-full">
               <span className="bg-primary text-white text-sm font-bold px-4 py-1.5 rounded-full mb-4 inline-block">
                 {project.category}
               </span>
-              <h1 className="font-heading text-5xl md:text-7xl font-extrabold text-white mb-2">{project.title}</h1>
+              <h1 className="font-heading text-3xl sm:text-5xl md:text-7xl font-extrabold text-white mb-2 max-w-full break-words px-4 sm:px-0">{project.title}</h1>
               {project.tags && (
                 <p className="text-white/80 font-light text-lg">{project.tags.split(',').join(' • ')}</p>
               )}
